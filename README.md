@@ -7,7 +7,10 @@
 [![codecov](https://codecov.io/gh/kephale/napari-conference/branch/main/graph/badge.svg)](https://codecov.io/gh/kephale/napari-conference)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-conference)](https://napari-hub.org/plugins/napari-conference)
 
-A simple plugin that allows you to use napari + your webcam in video calls
+A simple plugin that allows you to use napari + your webcam in video
+calls
+
+[napari_conference_example.png](napari_conference_example.png)
 
 ----------------------------------
 
