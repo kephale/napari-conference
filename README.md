@@ -10,7 +10,8 @@
 A simple plugin that allows you to use napari + your webcam in video
 calls
 
-[napari_conference_example.png](napari_conference_example.png)
+![Example screenshot of a person using napari conference with the
+napari viewer and napari conference widget shown](napari_conference_example.png)
 
 ----------------------------------
 
