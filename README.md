@@ -23,6 +23,9 @@ https://napari.org/stable/plugins/index.html
 
 ## Installation
 
+First follow the installation instructions for `pyvirtualcam`:
+https://github.com/letmaik/pyvirtualcam#installation
+
 You can install `napari-conference` via [pip]:
 
     pip install napari-conference

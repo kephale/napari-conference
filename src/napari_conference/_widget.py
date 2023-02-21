@@ -14,14 +14,12 @@ from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget
 if TYPE_CHECKING:
     import napari
 
-
 import cv2
-import numpy as np
-
 import napari
-from napari.qt.threading import thread_worker
+import numpy as np
 import pyvirtualcam
 from magicgui import magic_factory
+from napari.qt.threading import thread_worker
 
 global capturing
 capturing = False
@@ -34,7 +32,8 @@ update_mode = {"filter": "None"}
 
 global trail_param
 trail_param = 0.1
-    
+
+
 def make_layer(layer_name="Conference", viewer=None):
     # Make the virtual camera
     # cam = pyvirtualcam.Camera(width=2908, height=2032, fps=20)
@@ -60,7 +59,6 @@ def make_layer(layer_name="Conference", viewer=None):
         cam.send(screen[:, :, :3])
         # cam.sleep_until_next_frame()
 
-
     @thread_worker(connect={"yielded": update_layer})
     def frame_updater():
         global update_mode, capturing, cam, trail_param
@@ -71,7 +69,7 @@ def make_layer(layer_name="Conference", viewer=None):
             raise IOError("Cannot open webcam")
 
         prev_frame = None
-        
+
         while capturing:
             ret, frame = cap.read()
             frame = cv2.resize(
@@ -98,11 +96,14 @@ def make_layer(layer_name="Conference", viewer=None):
             #     frame = frame + frame * gauss
 
             # Make this an option
-            frame = np.array(prev_frame * trail_param + frame * (1.0 - trail_param), dtype=frame.dtype)
+            frame = np.array(
+                prev_frame * trail_param + frame * (1.0 - trail_param),
+                dtype=frame.dtype,
+            )
             prev_frame = np.array(frame)
-                
+
             yield frame
-            
+
         cap.release()
         print("Capture device released.")
 
@@ -112,40 +113,43 @@ def make_layer(layer_name="Conference", viewer=None):
     return frame_updater()
 
 
-
 @magic_factory(
     call_button="Update",
     dropdown={"choices": ["None", "Blur", "Laplacian"]},
 )
-def conference_widget(viewer: "napari.viewer.Viewer", layer_name="Napari Conference", dropdown="None", running=False, trails_param=0.1):
+def conference_widget(
+    viewer: "napari.viewer.Viewer",
+    layer_name="Napari Conference",
+    dropdown="None",
+    running=False,
+    trails_param=0.1,
+):
     global update_mode, capturing, cam, trail_param
 
     capturing = running
     update_mode["filter"] = dropdown
 
-    trail_param = new_trail_param
-    
+    trail_param = trails_param
+
     if cam is None:
         make_layer(layer_name, viewer=viewer)
-    
+
 
 if __name__ == "__main__":
     viewer = napari.Viewer()
     viewer.window.resize(800, 600)
 
-
     widget = conference_widget()
-    
+
     viewer.window.add_dock_widget(widget, name="Conference")
     # widget_demo.show()
 
     worker = make_layer("Kyle", viewer=viewer)
-    
+
     try:
         worker.start()
     except Exception:
         print("barf")
-
 
     napari.run()
 
