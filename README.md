@@ -23,8 +23,18 @@ https://napari.org/stable/plugins/index.html
 
 ## Installation
 
-First follow the installation instructions for `pyvirtualcam`:
+### Prerequisites
+
+You will need to:
+
+- follow `pyvirtualcam`'s installation instructions:
 https://github.com/letmaik/pyvirtualcam#installation
+- install `napari` from source to get the new async slicing updates 
+
+Note: I needed to install `pyvirtualcam` from source on my MacOS M1
+with python=3.10.
+
+
 
 You can install `napari-conference` via [pip]:
 

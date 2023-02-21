@@ -6,14 +6,6 @@ see: https://napari.org/stable/plugins/guides.html?#widgets
 
 Replace code below according to your needs.
 """
-from typing import TYPE_CHECKING
-
-from magicgui import magic_factory
-from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget
-
-if TYPE_CHECKING:
-    import napari
-
 import cv2
 import napari
 import numpy as np
@@ -82,6 +74,7 @@ def make_layer(layer_name="Conference", viewer=None):
 
             # frame = cv2.blur(frame, (5,5))
 
+            # Apply a filter
             if update_mode["filter"] == "Blur":
                 frame = cv2.blur(frame, (5, 5))
             elif update_mode["filter"] == "Laplacian":
@@ -89,13 +82,8 @@ def make_layer(layer_name="Conference", viewer=None):
 
             elif update_mode["filter"] == "Canny":
                 frame = cv2.Canny(frame, 100, 200)
-            # elif update_mode["filter"] == "AddNoise":
-            #     row, col, ch = frame.shape
-            #     gauss = np.random.randn(row, col, ch)
-            #     gauss = gauss.reshape(row, col, ch)
-            #     frame = frame + frame * gauss
 
-            # Make this an option
+            # This adds trails if trail param is 1, then this will never update
             frame = np.array(
                 prev_frame * trail_param + frame * (1.0 - trail_param),
                 dtype=frame.dtype,
