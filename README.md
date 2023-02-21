@@ -13,17 +13,14 @@ calls
 ![Example screenshot of a person using napari conference with the
 napari viewer and napari conference widget shown](napari_conference_example.png)
 
-----------------------------------
+## Usage
 
-This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
+1. `Plugins>start conference`
+2. Check `running` checkbox
+3. Press `Update` button to update any setting (and start/stop)
 
-<!--
-Don't miss the full getting started guide to set up your new package:
-https://github.com/napari/cookiecutter-napari-plugin#getting-started
-
-and review the napari docs for plugin developers:
-https://napari.org/stable/plugins/index.html
--->
+If things work in zoom but you don't show up, then make sure `blur
+background` is disabled.
 
 ## Installation
 
@@ -40,7 +37,7 @@ with python=3.10.
 
 
 
-You can install `napari-conference` via [pip]:
+[Not available on pypi yet] You can install `napari-conference` via [pip]:
 
     pip install napari-conference
 
@@ -50,6 +47,11 @@ To install latest development version :
 
     pip install git+https://github.com/kephale/napari-conference.git
 
+
+## Known Issues
+
+- resizing the napari window while streaming causes a crash
+- cannot be restarted after stopping the widget
 
 ## Contributing
 
@@ -82,3 +84,15 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
 [PyPI]: https://pypi.org/
+
+----------------------------------
+
+This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
+
+<!--
+Don't miss the full getting started guide to set up your new package:
+https://github.com/napari/cookiecutter-napari-plugin#getting-started
+
+and review the napari docs for plugin developers:
+https://napari.org/stable/plugins/index.html
+-->
