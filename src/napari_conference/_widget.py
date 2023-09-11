@@ -25,11 +25,57 @@ update_mode = {"filter": "None"}
 global trail_param
 trail_param = 0.1
 
+group_name = "webcam"
+
+
+def gameboy_filter(image):
+    # Convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Downscale the image to Gameboy's resolution
+    small = cv2.resize(gray, (160, 144), interpolation=cv2.INTER_LINEAR)
+
+    # Threshold the image to get the 4 Gameboy shades
+    _, black_and_white = cv2.threshold(small, 128, 255, cv2.THRESH_BINARY)
+    _, dark_gray = cv2.threshold(small, 64, 255, cv2.THRESH_BINARY)
+    _, light_gray = cv2.threshold(small, 192, 255, cv2.THRESH_BINARY)
+
+    # Combine the shades
+    gameboy_gray = np.zeros_like(small, dtype=np.uint8)
+    gameboy_gray += 255 - black_and_white
+    gameboy_gray += (255 - dark_gray) // 2
+    gameboy_gray += (255 - light_gray) // 3
+
+    # Map grayscale shades to Gameboy greenish palette
+    gameboy_color = np.zeros(
+        (small.shape[0], small.shape[1], 3), dtype=np.uint8
+    )
+
+    gameboy_color[gameboy_gray == 255] = [155, 188, 15]  # Off-white color
+    gameboy_color[gameboy_gray == 170] = [139, 172, 15]  # Light gray
+    gameboy_color[gameboy_gray == 85] = [48, 98, 48]  # Dark gray
+    gameboy_color[gameboy_gray == 0] = [15, 56, 15]  # Black
+
+    # Resize to original image size
+    output = cv2.resize(
+        gameboy_color,
+        (image.shape[1], image.shape[0]),
+        interpolation=cv2.INTER_NEAREST,
+    )
+
+    return output
+
 
 def make_layer(layer_name="Conference", viewer=None):
     # Make the virtual camera
     # cam = pyvirtualcam.Camera(width=2908, height=2032, fps=20)
     # cam = pyvirtualcam.Camera(width=960, height=540, fps=20)
+    global frame_count, out_zarr
+
+    out_zarr = None
+
+    frame_count = 0
+    max_frames = 1000
 
     # This function is called on every frame of the real webcam
     def update_layer(new_frame):
@@ -49,11 +95,13 @@ def make_layer(layer_name="Conference", viewer=None):
         # Send to virtual camera
         # cam.send(screen)
         cam.send(screen[:, :, :3])
-        # cam.sleep_until_next_frame()
+
+        cam.sleep_until_next_frame()
 
     @thread_worker(connect={"yielded": update_layer})
     def frame_updater():
         global update_mode, capturing, cam, trail_param
+        global frame_count, out_zarr
         cap = cv2.VideoCapture(0)
 
         # Check if the webcam is opened correctly
@@ -69,19 +117,18 @@ def make_layer(layer_name="Conference", viewer=None):
             )
             frame = frame[:, :, ::-1]
 
-            if prev_frame is None:
-                prev_frame = np.array(frame)
+            np_frame = np.array(frame)
 
-            # frame = cv2.blur(frame, (5,5))
+            if prev_frame is None:
+                prev_frame = np_frame
 
             # Apply a filter
             if update_mode["filter"] == "Blur":
                 frame = cv2.blur(frame, (5, 5))
             elif update_mode["filter"] == "Laplacian":
                 frame = cv2.Laplacian(frame, cv2.CV_8U)
-
-            elif update_mode["filter"] == "Canny":
-                frame = cv2.Canny(frame, 100, 200)
+            elif update_mode["filter"] == "Gameboy":
+                frame = gameboy_filter(frame)
 
             # This adds trails if trail param is 1, then this will never update
             frame = np.array(
@@ -103,7 +150,7 @@ def make_layer(layer_name="Conference", viewer=None):
 
 @magic_factory(
     call_button="Update",
-    dropdown={"choices": ["None", "Blur", "Laplacian"]},
+    dropdown={"choices": ["None", "Blur", "Laplacian", "Gameboy"]},
 )
 def conference_widget(
     viewer: "napari.viewer.Viewer",
@@ -140,19 +187,3 @@ if __name__ == "__main__":
         print("barf")
 
     napari.run()
-
-
-"""
-Unhandled:
-
- WARNING: Traceback (most recent call last):
-  File "/Users/kharrington/nesoi/examples/webcam_fun.py", line 32, in update_layer
-    screen = viewer.screenshot(flash=False, canvas_only=False)
-  File "/Users/kharrington/git/kephale/nesoi/repos/napari/napari/viewer.py", line 129, in screenshot
-    return self.window.screenshot(
-  File "/Users/kharrington/git/kephale/nesoi/repos/napari/napari/_qt/qt_main_window.py", line 1350, in screenshot
-    img = QImg2array(self._screenshot(size, scale, flash, canvas_only))
-  File "/Users/kharrington/git/kephale/nesoi/repos/napari/napari/_qt/qt_main_window.py", line 1316, in _screenshot
-    img = self._qt_window.grab().toImage()
-RuntimeError: wrapped C/C++ object of type _QtMainWindow has been deleted
-"""
