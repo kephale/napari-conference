@@ -26,6 +26,39 @@ class WebcamState:
 state = WebcamState()
 
 
+def kaleidoscope_filter(image):
+    h, w, _ = image.shape
+
+    # Define the size of the central segment (for example, 1/4 of the image's height and width)
+    segment_size = (h // 4, w // 4)
+
+    # Calculate the starting and ending coordinates for the segment
+    start_y = h // 2 - segment_size[0] // 2
+    end_y = start_y + segment_size[0]
+    start_x = w // 2 - segment_size[1] // 2
+    end_x = start_x + segment_size[1]
+
+    # Crop the central segment
+    segment = image[start_y:end_y, start_x:end_x]
+
+    # Mirror horizontally
+    hor_mirror = np.fliplr(segment)
+
+    # Concatenate horizontally mirrored segment with the original segment
+    top = np.concatenate((segment, hor_mirror), axis=1)
+
+    # Mirror the top vertically
+    bottom = np.flipud(top)
+
+    # Concatenate vertically to get the kaleidoscope pattern
+    kaleidoscope = np.concatenate((top, bottom), axis=0)
+
+    # Resize the kaleidoscope pattern to fit the entire image
+    output = cv2.resize(kaleidoscope, (w, h), interpolation=cv2.INTER_NEAREST)
+
+    return output
+
+
 def gameboy_filter(image):
     # Convert the image to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -127,6 +160,8 @@ def make_layer(layer_name="Conference", viewer=None):
                 frame = cv2.Laplacian(frame, cv2.CV_8U)
             elif state.update_mode["filter"] == "Gameboy":
                 frame = gameboy_filter(frame)
+            elif state.update_mode["filter"] == "Kaleidoscope":
+                frame = kaleidoscope_filter(frame)
 
             frame = np.array(
                 prev_frame * state.trail_param
@@ -151,7 +186,9 @@ def make_layer(layer_name="Conference", viewer=None):
 
 @magic_factory(
     call_button="Update",
-    dropdown={"choices": ["None", "Blur", "Laplacian", "Gameboy"]},
+    dropdown={
+        "choices": ["None", "Blur", "Laplacian", "Gameboy", "Kaleidoscope"]
+    },
 )
 def conference_widget(
     viewer: "napari.viewer.Viewer",
