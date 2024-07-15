@@ -193,38 +193,48 @@ def rescale_webcam(viewer, adjust_zoom_p=True):
     if adjust_zoom_p:
         adjust_zoom(viewer)
 
+def render_text_to_image(text, width=800, height=200, font_scale=1, thickness=2, padding=20):
+    """Render text to an image using OpenCV with padding and multiline support."""
+    # Split text into lines
+    lines = text.split('\n')
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    max_text_width = max([cv2.getTextSize(line, font, font_scale, thickness)[0][0] for line in lines])
+    max_text_height = max([cv2.getTextSize(line, font, font_scale, thickness)[0][1] for line in lines])
+
+    # Calculate required image size
+    img_width = max_text_width + 2 * padding
+    img_height = (max_text_height + padding) * len(lines) + padding
+
+    # Create a blank image
+    img = np.zeros((img_height, img_width, 3), dtype=np.uint8)
+
+    # Draw each line of text
+    y = padding + max_text_height
+    for line in lines:
+        text_size = cv2.getTextSize(line, font, font_scale, thickness)[0]
+        text_x = (img_width - text_size[0]) // 2
+        cv2.putText(img, line, (text_x, y), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
+        y += max_text_height + padding
+
+    return img
+
 def update_text_layer(viewer):
     description = state.media_descriptions[state.current_media_index]
 
-    # Remove the old text layer if it exists
+    # Render text to an image with padding and multiline support
+    text_image = render_text_to_image(description)
+
+    # Update or add the text image layer
     if "Text Layer" in viewer.layers:
-        viewer.layers.remove("Text Layer")
+        viewer.layers["Text Layer"].data = text_image
+    else:
+        viewer.add_image(text_image, name="Text Layer")
 
-    # Define bounding box size based on text length and add padding
-    text_length = len(description)
-    box_width = max(30, 0.4 * text_length)  # Increase width to accommodate more text
-    box_height = 5  # Set a height that provides enough space
-
-    # Add the new text layer with adjusted bounding box
-    layer = Shapes(
-        data=[[[0, 0], [0, box_height], [box_width, box_height], [box_width, 0]]],  # Adjusted shape
-        ndim=2,
-        shape_type="rectangle",
-        name="Text Layer",
-        properties={"t": np.array([description], dtype="<U64")},
-        face_color="transparent",
-        edge_color="transparent",
-        blending="additive",
-        opacity=1,
-        text=dict(
-            text="{t}",
-            size=8,  # Smaller text size to fit within the bounding box
-            color="white",
-            anchor="upper_left"
-        ),
-    )
-    viewer.add_layer(layer)
-    layer.mode = "add_rectangle"
+    # Position the text image layer based on the layout configuration
+    if state.layout_config == 1:
+        viewer.layers["Text Layer"].translate = [540, 0]
+    else:
+        viewer.layers["Text Layer"].translate = [540, 0]
 
 def toggle_layout(viewer):
     state.layout_config = 3 - state.layout_config  # Toggle between 1 and 2
@@ -326,7 +336,6 @@ def conference_widget(
 
     for dock_widget in list(viewer.window._dock_widgets.values()) + [viewer.window.qt_viewer.dockLayerList, viewer.window.qt_viewer.dockLayerControls]:
         dock_widget.setFloating(True)
-
 
 if __name__ == "__main__":
     viewer = napari.Viewer()
