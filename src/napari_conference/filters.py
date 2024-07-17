@@ -70,3 +70,58 @@ def gameboy_filter(image):
     )
 
     return output
+
+def sketch_filter(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    inv_gray = 255 - gray
+    blur = cv2.GaussianBlur(inv_gray, (21, 21), 0)
+    sketch = cv2.divide(gray, 255 - blur, scale=256)
+    return cv2.cvtColor(sketch, cv2.COLOR_GRAY2BGR)
+
+def neon_filter(image):
+    edges = cv2.Canny(image, 100, 200)
+    neon = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+    neon = cv2.addWeighted(image, 0.5, neon, 0.5, 0)
+    return neon
+
+def thermal_filter(image):
+    thermal = cv2.applyColorMap(image, cv2.COLORMAP_JET)
+    return thermal
+
+def vhs_filter(image):
+    noise = np.random.normal(0, 25, image.shape).astype(np.uint8)
+    vhs = cv2.add(image, noise)
+    return cv2.cvtColor(vhs, cv2.COLOR_BGR2GRAY)
+
+def glitch_filter(image):
+    rows, cols, _ = image.shape
+    glitch = np.copy(image)
+    num_swaps = np.random.randint(5, 20)
+    
+    for _ in range(num_swaps):
+        # Define the first random region
+        x1 = np.random.randint(0, cols)
+        y1 = np.random.randint(0, rows)
+        
+        max_w1 = min(50, cols - x1)
+        max_h1 = min(50, rows - y1)
+        
+        if max_w1 <= 5 or max_h1 <= 5:
+            continue
+        
+        w1 = np.random.randint(5, max_w1)
+        h1 = np.random.randint(5, max_h1)
+        
+        # Ensure the second region is within bounds and of the same size
+        x2 = np.random.randint(0, cols - w1)
+        y2 = np.random.randint(0, rows - h1)
+        
+        # Extract the regions
+        region1 = glitch[y1:y1+h1, x1:x1+w1].copy()
+        region2 = glitch[y2:y2+h1, x2:x2+w1].copy()
+        
+        # Swap the regions
+        glitch[y1:y1+h1, x1:x1+w1] = region2
+        glitch[y2:y2+h1, x2:x2+w1] = region1
+        
+    return glitch

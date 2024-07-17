@@ -4,7 +4,7 @@ import numpy as np
 import yaml
 from magicgui import magic_factory
 from napari.qt.threading import thread_worker
-from napari_conference.filters import kaleidoscope_filter, gameboy_filter
+from napari_conference.filters import kaleidoscope_filter, gameboy_filter, sketch_filter, neon_filter, thermal_filter, vhs_filter, glitch_filter
 from qtpy.QtWidgets import QPushButton, QVBoxLayout, QWidget
 from qtpy import QtCore
 import time
@@ -72,6 +72,16 @@ def frame_updater():
             frame = gameboy_filter(frame)
         elif state.update_mode["filter"] == "Kaleidoscope":
             frame = kaleidoscope_filter(frame)
+        elif state.update_mode["filter"] == "Sketch":
+            frame = sketch_filter(frame)
+        elif state.update_mode["filter"] == "Neon":
+            frame = neon_filter(frame)
+        elif state.update_mode["filter"] == "Thermal":
+            frame = thermal_filter(frame)
+        elif state.update_mode["filter"] == "VHS":
+            frame = vhs_filter(frame)
+        elif state.update_mode["filter"] == "Glitch":
+            frame = glitch_filter(frame)            
 
         frame = np.array(
             prev_frame * state.trail_param
@@ -327,7 +337,7 @@ def add_buttons_and_keybindings(viewer):
 @magic_factory(
     call_button="Update",
     dropdown={
-        "choices": ["None", "Blur", "Laplacian", "Gameboy", "Kaleidoscope"]
+        "choices": ["None", "Blur", "Laplacian", "Gameboy", "Kaleidoscope", "Sketch", "Neon", "Thermal", "Glitch"]
     },
 )
 def conference_widget(
