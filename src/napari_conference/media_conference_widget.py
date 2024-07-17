@@ -110,6 +110,12 @@ def video_frame_updater(viewer):
             raise IOError("Cannot open video file")
 
         LOGGER.info("Starting video frame capturing loop")
+        original_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        original_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        aspect_ratio = original_width / original_height
+        new_height = 480
+        new_width = int(new_height * aspect_ratio)
+
         while state.video_capturing:
             ret, frame = cap.read()
             if not ret:
@@ -117,7 +123,7 @@ def video_frame_updater(viewer):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Loop the video
                 continue
 
-            frame = cv2.resize(frame, (640, 480), interpolation=cv2.INTER_AREA)
+            frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
             frame = frame[:, :, ::-1]  # Convert BGR to RGB
             yield frame
 
@@ -125,6 +131,7 @@ def video_frame_updater(viewer):
 
         cap.release()
         LOGGER.info("Video file capture device released.")
+
 
 def update_layer(viewer, layer_name, frame, set_active=False):
     if layer_name not in viewer.layers:
@@ -193,16 +200,40 @@ def rescale_webcam(viewer, adjust_zoom_p=True):
     if adjust_zoom_p:
         adjust_zoom(viewer)
 
-def render_text_to_image(text, width=800, height=200, font_scale=1, thickness=2, padding=20):
+def render_text_to_image(text, layout_config, total_width=800, height=200, font_scale=1, thickness=2, padding=20):
     """Render text to an image using OpenCV with padding and multiline support."""
-    # Split text into lines
-    lines = text.split('\n')
+
+    # Adjust width based on layout configuration
+    if layout_config == 1:  # Side-by-side layout
+        adjusted_width = total_width * 2  # Assuming half the width is allocated for text
+    else:  # Picture-in-picture layout
+        adjusted_width = total_width - padding * 2  # Full width minus padding
+
+    # Split text into lines based on word wrapping
     font = cv2.FONT_HERSHEY_SIMPLEX
+    words = text.split(' ')
+    lines = []
+    current_line = ''
+
+    for word in words:
+        if current_line == '':
+            current_line = word
+        else:
+            text_size = cv2.getTextSize(current_line + ' ' + word, font, font_scale, thickness)[0]
+            if text_size[0] + 2 * padding <= adjusted_width:
+                current_line += ' ' + word
+            else:
+                lines.append(current_line)
+                current_line = word
+
+    if current_line:
+        lines.append(current_line)
+
     max_text_width = max([cv2.getTextSize(line, font, font_scale, thickness)[0][0] for line in lines])
     max_text_height = max([cv2.getTextSize(line, font, font_scale, thickness)[0][1] for line in lines])
 
     # Calculate required image size
-    img_width = max_text_width + 2 * padding
+    img_width = min(max_text_width + 2 * padding, adjusted_width)
     img_height = (max_text_height + padding) * len(lines) + padding
 
     # Create a blank image
@@ -221,8 +252,8 @@ def render_text_to_image(text, width=800, height=200, font_scale=1, thickness=2,
 def update_text_layer(viewer):
     description = state.media_descriptions[state.current_media_index]
 
-    # Render text to an image with padding and multiline support
-    text_image = render_text_to_image(description)
+    # Render text to an image with padding and multiline support, based on layout configuration
+    text_image = render_text_to_image(description, state.layout_config)
 
     # Update or add the text image layer
     if "Text Layer" in viewer.layers:
@@ -244,11 +275,12 @@ def configure_layout(viewer):
     if "Kyle Harrington" in viewer.layers and "media" in viewer.layers and "Text Layer" in viewer.layers:
         if state.layout_config == 1:
             viewer.layers["Kyle Harrington"].translate = [0, 0]
+            viewer.layers["Kyle Harrington"].scale = (1, 1)
             viewer.layers["media"].translate = [0, 640]
             viewer.layers["Text Layer"].translate = [540, 0]
         else:
             viewer.layers["Kyle Harrington"].translate = [0, 0]
-            viewer.layers["Kyle Harrington"].scale = (0.125, 0.125)
+            viewer.layers["Kyle Harrington"].scale = (0.25, 0.25)
             viewer.layers["media"].translate = [0, 0]
             viewer.layers["Text Layer"].translate = [540, 0]
 
@@ -304,7 +336,7 @@ def conference_widget(
     running=False,
     video_running=False,
     trails_param=0.1,
-    yaml_file="podcast_media_files.yaml",
+    yaml_file="podcast_media_files_v02.yaml",
 ):
     global state
 
@@ -328,7 +360,7 @@ def conference_widget(
             state.current_video_worker.quit()
         LOGGER.info("Creating video layer")
         video_worker = video_frame_updater(viewer)
-        video_worker.yielded.connect(lambda frame: update_layer(viewer, "media", frame, set_active=True))
+        video_worker.yielded.connect(lambda frame: update_layer(viewer, "media", frame, set_active=False))
         video_worker.start()
         state.current_video_worker = video_worker
 
