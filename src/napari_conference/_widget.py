@@ -217,6 +217,8 @@ def conference_widget(
 # Initialize global state
 state = WebcamState()
 
+__all__ = ["WebcamProcessor", "conference_widget", "ImageFilters", "WebcamState"]
+
 if __name__ == "__main__":
     viewer = napari.Viewer()
     viewer.window.resize(800, 600)
